@@ -1,21 +1,5 @@
-# netlify.toml
-
 [build]
-<<<<<<< HEAD
   # CRITICAL: Specifies the subdirectory where the Vite project lives
-  base    = "adikart-e-commerce-platform"
-  
-  # The command to run the build (runs inside the 'base' directory)
-  command = "npm run build"
-  
-  # The final publish directory (Vite output folder, relative to the 'base' directory)
-  publish = "dist" 
-  
-
-[build.environment]
-  NODE_VERSION = "18"
-=======
-  # CRITICAL: Tell Netlify where the Vite project lives
   base    = "adikart-e-commerce-platform"
   
   # The command to run the build process
@@ -24,5 +8,5 @@
   # CRITICAL: The build output folder (relative to the base directory)
   publish = "dist" 
   
-  # The final publish path will be: adikart-e-commerce-platform/dist
->>>>>>> 807fca6a1083f3c8c2bf93fc53b8b3ff2481d9b3
+[build.environment]
+  NODE_VERSION = "18"
