@@ -1,0 +1,13 @@
+# netlify.toml
+
+[build]
+  # CRITICAL: Tell Netlify where the Vite project lives
+  base    = "adikart-e-commerce-platform"
+  
+  # The command to run the build process
+  command = "npm run build"
+  
+  # CRITICAL: The build output folder (relative to the base directory)
+  publish = "dist" 
+  
+  # The final publish path will be: adikart-e-commerce-platform/dist
