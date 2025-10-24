@@ -1,0 +1,5 @@
+{
+  "name": "Adikart E-Commerce Platform",
+  "description": "A modern, responsive e-commerce storefront built with React and Tailwind CSS. Features a dynamic product catalog, an interactive shopping cart, and an admin dashboard with AI-powered product description generation.",
+  "requestFramePermissions": []
+}
