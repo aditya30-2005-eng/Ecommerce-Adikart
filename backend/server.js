@@ -14,9 +14,31 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
-// CRITICAL: Increased payload size limit and CORS configuration
+// CRITICAL FIX: Update CORS to allow all necessary origins including Netlify
+const allowedOrigins = [
+    'http://localhost:3000', 
+    // Add the deployed backend URL to allow self-requests and internal services
+    'https://ecommerce-adikart.onrender.com', 
+];
+
 app.use(cors({ 
-    origin: 'http://localhost:3000', // Allow frontend
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, Postman) and server-to-server requests
+        if (!origin) return callback(null, true);
+
+        // Allow explicitly allowed origins
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        
+        // Allow all Netlify deployments (most critical fix for frontend)
+        if (origin.endsWith('.netlify.app')) {
+            return callback(null, true);
+        }
+
+        // Block other origins
+        callback(new Error('Not allowed by CORS: ' + origin), false);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
 })); 
@@ -28,7 +50,6 @@ mongoose.connect(MONGO_URI)
   .then(() => {
     console.log('MongoDB connected successfully');
     // Run Admin Seeder logic here (Requires User model)
-    // NOTE: Ensure your Admin Seeder is not imported if User model fails, but in this setup it is required.
     // seedAdminUser(); 
   })
   .catch(err => console.error('MongoDB connection error:', err));

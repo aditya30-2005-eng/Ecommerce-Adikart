@@ -1,7 +1,7 @@
 // adikart-e-commerce-platform/components/Checkout.tsx
 import React, { useState } from 'react';
 import { CartItem, User } from '../types';
-import axios from 'axios'; // Import axios for backend calls
+import api from '@/services/apiService.ts'; // <-- CRITICAL FIX: Use configured API service
 
 interface CheckoutProps {
   cartItems: CartItem[];
@@ -10,8 +10,7 @@ interface CheckoutProps {
   user: User;
 }
 
-// NOTE: Ensure your API base URL is correct
-const API_BASE_URL = 'http://localhost:5000/api'; 
+// NOTE: API base URL is now configured in apiService.ts 
 
 const Checkout: React.FC<CheckoutProps> = ({ cartItems, onSuccessfulPayment, onNavigateBack, user }) => {
   const [formData, setFormData] = useState({
@@ -52,8 +51,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, onSuccessfulPayment, onN
     setIsProcessing(true);
 
     try {
-        // STEP 1: Call Backend to create Order ID securely
-        const orderResponse = await axios.post(`${API_BASE_URL}/payment/order`, {
+        // STEP 1: Call Backend to create Order ID securely (FIXED URL)
+        const orderResponse = await api.post('/payment/order', {
             amount: amountInPaise,
             currency: 'INR',
         });
@@ -68,9 +67,10 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, onSuccessfulPayment, onN
             description: "Order Payment",
             order_id: order_id, // Pass the secured Order ID
             handler: async (response: any) => {
-                // STEP 3: Call Backend to verify payment signature
+                // STEP 3: Call Backend to verify payment signature (FIXED URL)
                 try {
-                    await axios.post(`${API_BASE_URL}/payment/verify`, response);
+                    // Use the imported API instance
+                    await api.post('/payment/verify', response); 
                     onSuccessfulPayment(); // Success only after verification
                 } catch (verifyError) {
                     alert("Payment failed verification. Contact support.");
@@ -88,6 +88,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, onSuccessfulPayment, onN
         };
 
         // STEP 2: Open Razorpay modal
+        // @ts-ignore
         const rzp = new window.Razorpay(options);
         rzp.open();
 

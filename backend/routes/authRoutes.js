@@ -91,4 +91,87 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// ==========================
+// 🆕 FORGOT PASSWORD ROUTE (Start reset flow - sends email)
+// ==========================
+router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    const userEmail = email.toLowerCase().trim();
+
+    try {
+        const user = await User.findOne({ email: userEmail });
+
+        if (!user) {
+            // Send a general success message to avoid revealing which emails are registered.
+            return res.status(200).json({ message: 'If an account exists for this email, a password reset link has been sent.' });
+        }
+
+        // Generate token and save to DB (requires getResetPasswordToken method in User model)
+        const resetToken = user.getResetPasswordToken();
+        await user.save();
+        
+        // Determine the frontend URL (Assuming Netlify deployment)
+        const origin = req.headers.origin || req.headers.host;
+        let frontendBaseUrl = origin ? (origin.startsWith('http') ? origin : `https://${origin}`) : 'http://localhost:3000';
+        
+        // The frontend ResetPassword component expects a URL parameter: /resetpassword?token=
+        const resetLink = `${frontendBaseUrl}/resetpassword?token=${resetToken}`;
+        
+        const emailSent = await sendResetLinkEmail(user.email, resetLink);
+
+        if (!emailSent) {
+             // Rollback the token generation if email failed (optional but good practice)
+             user.resetPasswordToken = undefined;
+             user.resetPasswordExpire = undefined;
+             await user.save();
+             return res.status(500).json({ message: 'Email service failed. Please check backend configuration.' });
+        }
+
+        return res.status(200).json({ message: 'Password reset link sent to your email.' });
+
+    } catch (error) {
+        console.error("FORGOT PASSWORD ERROR:", error);
+        return res.status(500).json({ message: 'Server error while processing reset request.' });
+    }
+});
+
+// ==========================
+// 🆕 RESET PASSWORD ROUTE (Applies new password)
+// ==========================
+router.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+    
+    // Hash the incoming token to match the one stored in the DB
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    try {
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpire: { $gt: Date.now() } // Token must not be expired
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid or expired password reset link.' });
+        }
+        
+        if (newPassword.length < 6) {
+             return res.status(400).json({ message: 'Password must be at least 6 characters long.' });
+        }
+
+        // Set new password (Mongoose pre-save hook will hash it)
+        user.password = newPassword;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        
+        await user.save(); // Hashing happens here
+
+        res.status(200).json({ message: 'Password successfully reset. You can now log in.' });
+
+    } catch (error) {
+        console.error("RESET PASSWORD ERROR:", error);
+        return res.status(500).json({ message: 'Server error during password reset.' });
+    }
+});
+
+
 export default router;
